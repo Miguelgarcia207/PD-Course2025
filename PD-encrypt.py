@@ -1,5 +1,4 @@
 import argparse
-import base64
 import os
 import sys
 import struct
@@ -46,8 +45,7 @@ def derive_key_from_passphrase(passphrase: str, salt: bytes, iterations: int = 2
     return PBKDF2(passphrase.encode('utf-8'), salt, dkLen=32, count=iterations, hmac_hash_module=sha256)
 
 
-def generate_passphrase(nbytes: int = 24) -> str:
-    return base64.urlsafe_b64encode(get_random_bytes(nbytes)).decode('utf-8')
+# No passphrase generation: passphrases must be provided intentionally by the user
 
 
 def main():
@@ -72,27 +70,17 @@ def main():
         sys.exit(1)
 
     # Obtain or generate passphrases; derive keys with PBKDF2 and random salts.
-    if args.generate:
-        pub_pass = generate_passphrase()
-        priv_pass = generate_passphrase()
-        print("Generated passphrases (SAVE THESE NOW, they are shown only once):")
-        print("public:", pub_pass)
-        print("private:", priv_pass)
-    elif args.prompt:
-        pub_pass = getpass.getpass("Enter public passphrase: ")
-        pub_pass_confirm = getpass.getpass("Confirm public passphrase: ")
-        if pub_pass != pub_pass_confirm:
-            print("Public passphrases do not match")
-            sys.exit(1)
-        priv_pass = getpass.getpass("Enter private passphrase: ")
-        priv_pass_confirm = getpass.getpass("Confirm private passphrase: ")
-        if priv_pass != priv_pass_confirm:
-            print("Private passphrases do not match")
-            sys.exit(1)
-    else:
-        # default: prompt interactively
-        pub_pass = getpass.getpass("Enter public passphrase: ")
-        priv_pass = getpass.getpass("Enter private passphrase: ")
+    # Always require intentional passphrases entered interactively
+    pub_pass = getpass.getpass("Enter public passphrase: ")
+    pub_pass_confirm = getpass.getpass("Confirm public passphrase: ")
+    if pub_pass != pub_pass_confirm:
+        print("Public passphrases do not match")
+        sys.exit(1)
+    priv_pass = getpass.getpass("Enter private passphrase: ")
+    priv_pass_confirm = getpass.getpass("Confirm private passphrase: ")
+    if priv_pass != priv_pass_confirm:
+        print("Private passphrases do not match")
+        sys.exit(1)
 
     # Pack both directories into tar bytes
     public_tar = pack_directory_to_tar_bytes(public_dir)
